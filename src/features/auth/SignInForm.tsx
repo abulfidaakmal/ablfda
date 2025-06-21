@@ -11,8 +11,8 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  signUpValidator,
-  TSignUpValidator,
+  signInValidator,
+  TSignInValidator,
 } from "@/lib/validators/auth-validator";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const SignUpForm = () => {
+const SignInForm = () => {
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string>();
 
@@ -32,31 +32,32 @@ const SignUpForm = () => {
     }
   }, [errorMessage]);
 
-  const form = useForm<TSignUpValidator>({
-    resolver: zodResolver(signUpValidator),
+  const form = useForm<TSignInValidator>({
+    resolver: zodResolver(signInValidator),
     defaultValues: {
-      name: "",
       email: "",
       password: "",
     },
   });
 
-  const { mutate, isPending, isSuccess } = trpc.auth.signUp.useMutation({
+  const { mutate, isPending, isSuccess, data } = trpc.auth.signIn.useMutation({
     onSuccess: () => {
-      toast.success("signed up successfully");
+      toast.success("signed in successfully");
 
       setTimeout(() => {
-        router.push("/sign-in");
+        router.push("/");
       }, 2000);
     },
     onError: ({ data }) => {
-      if (data?.code === "CONFLICT") {
-        setErrorMessage("email already exists");
+      if (data?.code === "UNAUTHORIZED") {
+        setErrorMessage("email or password is wrong");
       }
     },
   });
 
-  const onSubmit = (value: TSignUpValidator) => {
+  console.info(data);
+
+  const onSubmit = (value: TSignInValidator) => {
     mutate(value);
   };
 
@@ -64,19 +65,6 @@ const SignUpForm = () => {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <div className="flex flex-col gap-3">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="example" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
           <FormField
             control={form.control}
             name="email"
@@ -122,7 +110,7 @@ const SignUpForm = () => {
                 ? "Loading..."
                 : isSuccess
                 ? "Redirecting..."
-                : "Sign Up"}
+                : "Sign In"}
             </Button>
           </div>
         </div>
@@ -131,4 +119,4 @@ const SignUpForm = () => {
   );
 };
 
-export default SignUpForm;
+export default SignInForm;
